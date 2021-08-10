@@ -24,9 +24,9 @@ samtools view -Sbo bam/${f%%r1.fq}bam"
 done
 
 
-#################################################
+##############################################
 ###    samtools sort 
-#################################################
+##############################################
 cd /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/bam
 
 mkdir ../sorted_bam
@@ -35,8 +35,28 @@ for f in *.bam; do sbatch -o ${f%%.bam}.out -e ${f%%.bam}.err --mem 32000 --wrap
 
 
 #############################################
-#####   picard removes duplicate        #####
+#####   picard removes duplicate        
 #############################################
 
 for f in *sort.bam; do sbatch -o ${f%%.sort.bam}.out -e ${f%%.sort.bam}.err --mem 32000  --wrap "java -Xmx7g -jar /home/bioinformatics/software/picard/picard-2.14.0/picard.jar MarkDuplicates INPUT=$f OUTPUT=${f%%.bam}.markduplicates.bam REMOVE_DUPLICATES=true  AS=true METRICS_FILE=${f%%.bam}.markduplicates_metrics.txt";done
+
+
+#############################################
+#####   variant calling
+#############################################
+
+cd /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/sorted_bam
+
+#for f in *sort.markduplicates.bam; do sbatch -o ${f%%.sort.markduplicates.bam}.out -e ${f%%.sort.markduplicates.bam}.err --mem 32000  --wrap "samtools mpileup -vf /scratcha/sblab/martin03/reference_data/genomes/iGenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa ${f} > ${f%%.bam}.vcf.gz | bcftools call -v -m -O z -o ${f%bam}variant.vcf.gz -"; done
+
+conda activate
+
+for f in *sort.markduplicates.bam; do sbatch -o ${f%%.sort.markduplicates.bam}.out -e ${f%%.sort.markduplicates.bam}.err --mem 32000  --wrap "samtools mpileup -vf /scratcha/sblab/martin03/reference_data/genomes/iGenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa ${f} | bcftools call -v -m -O z -o ${f%bam}variant.vcf.gz -"; done
+
+
+
+#bcftools call -v -m -O z -o ${f}variant.vcf.gz ${f}.vcf
+
+
+
 
