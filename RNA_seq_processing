@@ -23,6 +23,21 @@ sbatch --mem 32G -J ${f%%r1.fq}hisat2 -o ${f%%r1.fq}out -e ${f%%r1.fq}err --wrap
 samtools view -Sbo bam/${f%%r1.fq}bam"
 done
 
+#################################################
+###    Alignment using hisat2 --mp 2,2 --rna-strandness F
+#################################################
+
+cd /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq
+
+mkdir bam
+
+genomeindex='/Users/chen03/reference/hg38_hisat2/hg38'
+
+for f in *fq
+do
+sbatch --mem 32G -J ${f%%r1.fq}hisat2 -o ${f%%r1.fq}out -e ${f%%r1.fq}err --wrap "hisat2 --mp 2,2 --rna-strandness F -x ${genomeindex} -U $f | \
+samtools view -Sbo bam_mp22/${f%%r1.fq}mp22.bam"
+done
 
 ##############################################
 ###    samtools sort 
@@ -42,12 +57,12 @@ for f in *sort.bam; do sbatch -o ${f%%.sort.bam}.out -e ${f%%.sort.bam}.err --me
 
 
 #############################################
-#####   variant calling
+#####   variant calling (after deduplicate)
 #############################################
 
 cd /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/sorted_bam
 
-#for f in *sort.markduplicates.bam; do sbatch -o ${f%%.sort.markduplicates.bam}.out -e ${f%%.sort.markduplicates.bam}.err --mem 32000  --wrap "samtools mpileup -vf /scratcha/sblab/martin03/reference_data/genomes/iGenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa ${f} > ${f%%.bam}.vcf.gz | bcftools call -v -m -O z -o ${f%bam}variant.vcf.gz -"; done
+for f in *sort.markduplicates.bam; do sbatch -o ${f%%.sort.markduplicates.bam}.out -e ${f%%.sort.markduplicates.bam}.err --mem 32000  --wrap "samtools mpileup -vf /scratcha/sblab/martin03/reference_data/genomes/iGenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa ${f} > ${f%%.bam}.vcf.gz"; done
 
 conda activate
 
@@ -56,6 +71,57 @@ for f in *sort.markduplicates.bam; do sbatch -o ${f%%.sort.markduplicates.bam}.o
 
 
 #bcftools call -v -m -O z -o ${f}variant.vcf.gz ${f}.vcf
+
+
+#############################################
+#####   variant calling (without deduplicate)
+#############################################
+
+cd /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/sorted_bam
+
+for f in *sort.bam; do sbatch -o ${f%%.sort.bam}.out -e ${f%%.sort.bam}.err --mem 32000  --wrap "samtools mpileup -vf /scratcha/sblab/martin03/reference_data/genomes/iGenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa ${f} > ${f%%.bam}.vcf.gz"; done
+
+conda activate
+
+#for f in *sort.bam; do sbatch -o ${f%%.sort.bam}.out -e ${f%%.sort.bam}.err --mem 32000  --wrap "samtools mpileup -vf /scratcha/sblab/martin03/reference_data/genomes/iGenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa ${f} | bcftools call -v -m -O z -o ${f%bam}variant.vcf.gz -"; done
+
+for f in *sort.vcf.gz; do sbatch -o ${f%%sort.vcf.gz}out -e ${f%%sort.vcf.gz}err --mem 32000  --wrap "bcftools call -v -m -O z -o ${f%vcf.gz}variant.vcf.gz $f"; done
+
+
+
+
+#############################################
+#####   statistic analysis
+#############################################
+
+#####count the reads% of MAPQ60/1
+
+##### 60 - uniquely mapped read, regardless of number of mismatches / indels
+##### 1 - multiply mapped, perfect match or few mismatches / indels
+##### 0 - unmapped, or multiply mapped and with lots of mismatches / indels
+ 
+ 
+
+for f in *sort.bam; do sbatch -J count -o count.out -e count.err --mem 32000 --wrap "samtools view $f | cut -f 5 | wc -l > ${f}.count"; done
+
+for f in *sort.bam; do sbatch -J count -o count.out -e count.err --mem 32000 --wrap "samtools view $f | cut -f 5 | grep '60' | wc -l > ${f}.mapq60.count"; done
+
+for f in *sort.bam; do sbatch -J count -o count.out -e count.err --mem 32000 --wrap "samtools view $f | cut -f 5 | grep '1' | wc -l > ${f}.mapq1.count"; done
+
+
+#####count the mutation number(T>C/A>G) and T/A number 
+
+cd /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/sorted_bam_mp22
+
+for f in *sort.variant.vcf.gz; do sbatch -J count -o count.out -e count.err --mem 32000 --wrap "zgrep -v '^#' $f | awk '{if ($4 == /"T/" && $5 == /"C/") print}' | wc -l > ${f}.TtoC.count"; done
+
+cd /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/sorted_bam
+
+for f in *sort.variant.vcf.gz; do sbatch -J ${f}count -o ${f}.count.out -e ${f}.count.err --mem 32000 --wrap "zgrep -v '^#' $f | awk '{if ($4 == "T" && $5 == "C") print}' | wc -l > ${f}.TtoC.count"; done
+
+
+
+
 
 
 
