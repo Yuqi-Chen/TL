@@ -1,0 +1,60 @@
+#SLAMDUNK doc: https://t-neumann.github.io/slamdunk/docs.html#all
+
+#hg38 genome reference download: https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/
+
+
+#hg38_3UTR_Refseq.bed download in UCSC Table browser: https://genome.ucsc.edu/cgi-bin/hgTables?hgsid=702230323_PbIkmuyjC3zhyHv55fnC4oZVkPN4&clade=mammal&org=Human&db=hg38&hgta_group=genes&hgta_track=xenoRefGene&hgta_table=refGene&hgta_regionType=genome&position=chr1%3A11102837-11267747&hgta_outputType=bed&hgta_outFileName=TUTR.bed
+#(from https://github.com/makovalab-psu/G4_Selection/blob/master/Selection%20-%20Supplementary%20Code%201.ipynb)
+
+
+cd /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq
+
+vi sample_file.txt
+
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/zxy_rep1.r1.fq	4sU_1h_TimeLaspe_chemistry	4sU_1h_TimeLaspe_chemistry_rep1	1
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/zxy_rep2.r1.fq	4sU_1h_TimeLaspe_chemistry	4sU_1h_TimeLaspe_chemistry_rep2	1
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/zxy_rep3.r1.fq	4sU_24h_TimeLaspe_chemistry	4sU_24h_TimeLaspe_chemistry_rep1	24
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/zxy_rep4.r1.fq	4sU_24h_TimeLaspe_chemistry	4sU_24h_TimeLaspe_chemistry_rep2	24
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/zxy_rep5.r1.fq	4sU_1h_SLAM_chemistry	4sU_1h_SLAM_chemistry_rep1	1
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/zxy_rep6.r1.fq	4sU_1h_SLAM_chemistry	4sU_1h_SLAM_chemistry_rep2	1
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/zxy_rep7.r1.fq	4sU_24h_SLAM_chemistry	4sU_24h_SLAM_chemistry_rep1	24
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/zxy_rep8.r1.fq	4sU_24h_SLAM_chemistry	4sU_24h_SLAM_chemistry_rep2	24
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/zxy_rep9.r1.fq	4sU_1h_input	4sU_1h_input_rep1	1
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/zxy_rep10.r1.fq	4sU_1h_input	4sU_1h_input_rep2	1
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/zxy_rep11.r1.fq	4sU_24h_input	4sU_24h_input_rep124
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/zxy_rep12.r1.fq	4sU_24h_input	4sU_24h_input_rep224
+
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq  zxy_rep1.r1.fq	4sU_1h_TimeLaspe_chemistry_rep1	1
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq  zxy_rep2.r1.fq	4sU_1h_TimeLaspe_chemistry_rep2	1
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq  zxy_rep3.r1.fq	4sU_24h_TimeLaspe_chemistry_rep1	24
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq  zxy_rep4.r1.fq	4sU_24h_TimeLaspe_chemistry_rep2	24
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq  zxy_rep5.r1.fq	4sU_1h_SLAM_chemistry_rep1	1
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq  zxy_rep6.r1.fq	4sU_1h_SLAM_chemistry_rep2	1
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq  zxy_rep7.r1.fq	4sU_24h_SLAM_chemistry_rep1	24
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq  zxy_rep8.r1.fq	4sU_24h_SLAM_chemistry_rep2	24
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq  zxy_rep9.r1.fq	4sU_1h_input_rep1	1
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq  zxy_rep10.r1.fq	4sU_1h_input_rep2	1
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq  zxy_rep11.r1.fq	4sU_24h_input_rep124
+/scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq  zxy_rep12.r1.fq	4sU_24h_input_rep224
+
+#############################
+##   SLAMDUNK all
+#############################
+
+for f in *fq; do sbatch -J SD -o ${f%%fq}SD.out -e ${f%%fq}SD.err --mem 32G --wrap "slamdunk all -r /Users/chen03/reference/ucsc/hg38/hg38.fa -b /Users/chen03/annotation/hg38/hg38_3UTR_RefSeq.bed \
+-o /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk \
+-5 0 -n 100 -m -mbq 20 --skip-sam $f"
+
+#############################
+##   sanity check the conversion rates
+#############################
+
+cd /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/filter
+
+for f in *bam; do sbatch -J SD -o ${f%%bam}CR.out -e ${f%%bam}CR.err --mem 32G --wrap "alleyoop utrrates \
+-r /Users/chen03/reference/ucsc/hg38/hg38.fa \
+-t 4 \
+-b /Users/chen03/annotation/hg38/hg38_3UTR_RefSeq.bed \
+-o /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/alleyoop_utrrates \
+$f"; done
+
