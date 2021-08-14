@@ -46,10 +46,14 @@ for f in *fq; do sbatch -J SD -o ${f%%fq}SD.out -e ${f%%fq}SD.err --mem 32G --wr
 -5 0 -n 100 -m -mbq 20 --skip-sam $f"
 
 #############################
-##   sanity check the conversion rates
+##   sanity check the conversion rates: alleyoop_utrrates
 #############################
 
 cd /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/filter
+
+vi /Users/chen03/.local/lib/python3.8/site-packages/slamdunk/plot/globalRatePlotter.R
+
+/Usr/bin/env Rscript -> /Users/chen03/sw/R/R-3.5.2/bin/Rscript
 
 for f in *bam; do sbatch -J SD -o ${f%%bam}CR.out -e ${f%%bam}CR.err --mem 32G --wrap "alleyoop utrrates \
 -r /Users/chen03/reference/ucsc/hg38/hg38.fa \
@@ -57,4 +61,58 @@ for f in *bam; do sbatch -J SD -o ${f%%bam}CR.out -e ${f%%bam}CR.err --mem 32G -
 -b /Users/chen03/annotation/hg38/hg38_3UTR_RefSeq.bed \
 -o /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/alleyoop_utrrates \
 $f"; done
+
+## RuntimeError: Error while executing command: "/Users/chen03/.local/lib/python3.8/site-packages/slamdunk/plot/globalRatePlotter.R -f /tmp/tmppngd415k -O /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/alleyoop_utrrates/zxy_rep9.r1_slamdunk_mapped_filtered_mutationrates_utr.pdf"
+
+
+#############################
+##   sanity check the conversion rates: alleyoop_tcperreadpos
+#############################
+
+mkdir /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/alleyoop_tcperreadpos
+
+cd /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/filter
+
+for f in *bam; do sbatch -J alleyoop_tcperreadpos -o ${f%%bam}CR.out -e ${f%%bam}CR.err --mem 32G --wrap "alleyoop tcperreadpos \
+-r /Users/chen03/reference/ucsc/hg38/hg38.fa \
+-s /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/snp \
+-t 4 \
+-o /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/alleyoop_tcperreadpos \
+$f"; done
+
+######################################################################################################################################################
+##program will fail here because of the error :
+##RuntimeError: Error while executing command: "/Users/chen03/.local/lib/python3.8/site-packages/slamdunk/plot/conversion_per_read_position.R -i /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/alleyoop_tcperreadpos/zxy_rep9.r1_slamdunk_mapped_filtered_tcperreadpos.csv -o /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/alleyoop_tcperreadpos/zxy_rep9.r1_slamdunk_mapped_filtered_tcperreadpos.pdf"
+##
+##problem solving:
+##
+##1. edit .bahsrc
+##   # Use locally-installed Rscript 3.5.2 when typing 'Rscript' in the command line.
+##   alias Rscript='/Users/chen03/sw/R/R-3.5.2/bin/Rscript'
+##
+##2. install package: install.package("getopt")
+##
+##3. deal with error "null device 1" (solution from https://www.jianshu.com/p/942e0dbe191e)
+##   vi /Users/chen03/.local/lib/python3.8/site-packages/slamdunk/plot/conversion_per_read_position.R
+##   comment out   dev.off()  
+##   replace it by   while (!is.null(dev.list()))  dev.off()
+##
+##4. run script:     
+##  Rscript /Users/chen03/.local/lib/python3.8/site-packages/slamdunk/plot/conversion_per_read_position.R -i /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/alleyoop_tcperreadpos/zxy_rep9.r1_slamdunk_mapped_filtered_tcperreadpos.csv -o /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/alleyoop_tcperreadpos/zxy_rep9.r1_slamdunk_mapped_filtered_tcperreadpos.pdf
+##
+################################################################################################################################
+
+cd /scratcha/sblab/chen03/20210728_ZXY_nascentRNA/SLX-20740/fastq/slamdunk/alleyoop_tcperreadpos
+
+for f in *csv; do \
+sbatch -J pdf -o ${f%%csv}pdf.out -e ${f%%csv}pdf.err --mem 8G --wrap \
+"/Users/chen03/sw/R/R-3.5.2/bin/Rscript \
+/Users/chen03/.local/lib/python3.8/site-packages/slamdunk/plot/conversion_per_read_position.R \
+-i $f \
+-o ${f%%csv}pdf"; done
+
+
+vi /Users/chen03/.local/lib/python3.8/site-packages/slamdunk/plot/conversion_per_read_position.R
+
+/Usr/bin/env Rscript -> /Users/chen03/sw/R/R-3.5.2/bin/Rscript
 
